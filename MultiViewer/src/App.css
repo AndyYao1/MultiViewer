@@ -3,17 +3,17 @@
     width: calc(95vw - var(--chat-width))
 }
 
-/* dont show move down on non-spotlighted stream */
+/* hide move down on non-spotlighted stream */
 .spotlightMode > :not(:first-child) > :nth-child(2) > #moveDownBtn{
     display: none;
 }
 
-/* dont show move up on spotlight stream */
+/* hide move up on spotlight stream */
 .spotlightMode > :first-child > :nth-child(2) > #moveUpBtn{
     display: none;
 }
 
-/* don't show move up button when no spotlight */
+/* hide move up button when no spotlight */
 :not(.spotlightMode).editMode > * > :nth-child(2) > #moveDownBtn{
     display: none;
 }
@@ -26,4 +26,8 @@
 /* show drag div in edit mode on hover */
 .editMode > div:hover > :nth-child(3) {
     display: flex
+}
+
+.dragging > * > :first-child {
+    pointer-events: none;
 }
