@@ -1,25 +1,23 @@
-.spotlightMode > :first-child > :first-child{
-    height: 400px;
+.spotlightMode > :first-child iframe{
+    height: 400px; 
+    width: calc(95vw - var(--chat-width))
+}
+
+.spotlightMode > .dragSpotlight iframe{
+    height: 400px; 
     width: calc(95vw - var(--chat-width))
 }
 
 /* hide move down on non-spotlighted stream */
-.spotlightMode > :not(:first-child) > :nth-child(2) > #moveDownBtn{
-    display: none;
+.spotlightMode.editMode > :first-child > :nth-child(2) > #moveDownBtn{
+    display: block;
 }
 
-/* hide move up on spotlight stream */
-.spotlightMode > :first-child > :nth-child(2) > #moveUpBtn{
-    display: none;
+:not(.spotlightMode).editMode > :first-child > :nth-child(2) > #moveUpBtn{
+    display: block;
 }
 
-/* hide move up button when no spotlight */
-:not(.spotlightMode).editMode > * > :nth-child(2) > #moveDownBtn{
-    display: none;
-}
-
-/* show all buttons in edit mode */
-.editMode > div > :nth-child(2) > button {
+.editMode > * > :nth-child(2) > #deleteBtn{
     display: block;
 }
 

@@ -7,11 +7,12 @@ import AddModal from "./components/AddModal";
 import { DragDropProvider } from "@dnd-kit/react";
 import { localChatWidthString,localStreamsString } from "./constants";
 import { move } from "@dnd-kit/helpers";
+import { isSortable } from "@dnd-kit/dom/sortable";
 
 export default function Page() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [streams,setStreams] = useState<string[]>([]);
-  const [visualOrder,setVisualOrder] = useState<string[]>([]);
+  const streamsRef = useRef<string[]>([]);
   const [streamChat,setStreamChat] = useState<string>("");
   const [chatWidth,setChatWidth] = useState<number>(parseInt(localStorage.getItem(localChatWidthString) || ((window.innerWidth*25)/100).toString()));
 
@@ -26,8 +27,9 @@ export default function Page() {
     }
   }
 
-  const setSpotlightStream = (stream : string) => {
+  const setSpotlightStream = (stream: string) => {
     const container = containerRef.current;
+    handleStreamsUpdate([stream, ...streamsRef.current.filter((prevStream:string) => prevStream !== stream)], true);
     container?.classList.add("spotlightMode");
   }
 
@@ -36,23 +38,21 @@ export default function Page() {
     container?.classList.remove("spotlightMode");
   }
 
-  const handleStreamsUpdate = (newStreams:string[]) => {
+  const handleStreamsUpdate = (newStreams:string[], forceRender:boolean=false) => {
     // Deduplicate and remove empty
     const cleanedStreams = [...new Set(newStreams)].filter(stream => !!stream);
     localStorage.setItem(localStreamsString, cleanedStreams.join("/"));
-    window.history.replaceState({}, "", window.location.origin + "/" + cleanedStreams.join("/"));
-    
-    // Only update if add/remove
-    setStreams(prev => prev.length === cleanedStreams.length? prev : cleanedStreams);
-    setVisualOrder(cleanedStreams);
+    window.history.pushState({}, "", window.location.origin + "/" + cleanedStreams.join("/"));
+    streamsRef.current = cleanedStreams;
+    setStreams(prev => prev.length !== cleanedStreams.length || forceRender ? cleanedStreams : prev);
   }
 
   const removeStream = (removedStream:string) => {
-    handleStreamsUpdate(streams.filter((stream) => stream != removedStream));
+    handleStreamsUpdate(streamsRef.current.filter((stream) => stream != removedStream));
   }
 
   const addStreams = (addedStreams:string[]) => {
-    handleStreamsUpdate([...streams, ...addedStreams]);
+    handleStreamsUpdate([...streamsRef.current, ...addedStreams]);
   }
 
   useEffect(() => {
@@ -76,15 +76,30 @@ export default function Page() {
       {/* streams */}
       <DragDropProvider
         onDragOver={(event) => {
-          event.preventDefault();
+          const {source, target} = event.operation;
+          if (isSortable(source) && isSortable(target)){
+            if (target.index === 0){
+              source.element?.classList.add("dragSpotlight");
+              target.element?.classList.remove("dragSpotlight");
+            } 
+            if (source.index !== 0) {
+              source.element?.classList.remove("dragSpotlight");
+            }
+          }
         }}
         onDragEnd={(event) => {
-          handleStreamsUpdate(move(visualOrder, event))
+          const {source, target} = event.operation;
+          handleStreamsUpdate(move(streamsRef.current, event));
+          if (isSortable(target) && isSortable(source)){
+            if (target.index === 0 && containerRef.current?.classList.contains("spotlightMode")){
+              setStreamChat(source.id.toString());
+            }
+          }
         }}
       >
         <div className="flex flex-wrap relative streamContainer h-screen overflow-y-auto max-w-max mt-1 items-start" style={{'--chat-width': `${chatWidth}px`}} ref={containerRef}>
           { streams.length > 0 ? streams.map((stream,index) =>
-              <VideoPlayer stream={stream} index={index} visualIndex={visualOrder.indexOf(stream)} setSpotlightStream={setSpotlightStream} removeSpotlight={removeSpotlight} removeStream={removeStream} setChat={setStreamChat} key={stream}/>
+              <VideoPlayer stream={stream} index={index} setSpotlightStream={setSpotlightStream} removeSpotlight={removeSpotlight} removeStream={removeStream} setChat={setStreamChat} key={stream}/>
             ) 
             :
             <AddModal addStreams={addStreams}/>
