@@ -15,7 +15,7 @@ export default function Page() {
   const [streams,setStreams] = useState<string[]>([]);
   const streamsRef = useRef<string[]>([]);
 
-  const [showDialog,setShowDialog] = useState<boolean>(window.location.pathname === "/" && localStorage.getItem(localStreamsString) === null);
+  const [showDialog,setShowDialog] = useState<boolean>(streams.length === 0);
 
   const [streamChat,setStreamChat] = useState<string>("");
   const [chatWidth,setChatWidth] = useState<number>(parseInt(localStorage.getItem(localChatWidthString) || ((window.innerWidth*25)/100).toString()));
@@ -45,10 +45,18 @@ export default function Page() {
   const handleStreamsUpdate = (newStreams:string[], forceRender:boolean=false) => {
     // Deduplicate and remove empty
     const cleanedStreams = [...new Set(newStreams)].filter(stream => !!stream);
-    localStorage.setItem(localStreamsString, cleanedStreams.join("/"));
-    window.history.pushState({}, "", window.location.origin + "/" + cleanedStreams.join("/"));
     streamsRef.current = cleanedStreams;
     setStreams(prev => prev.length !== cleanedStreams.length || forceRender ? cleanedStreams : prev);
+    localStorage.setItem(localStreamsString, cleanedStreams.join("/"));
+
+    // Update URL with query params
+    const params = new URLSearchParams();
+    if (cleanedStreams.length > 0) {
+      params.set('streams', cleanedStreams.join(','));
+    }
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({}, "", newUrl);
+    
   }
 
   const removeStream = (removedStream:string) => {
@@ -62,10 +70,13 @@ export default function Page() {
 
   // grab streams from url or localstorage
   useEffect(() => {
-    const urlStreams = window.location.pathname;
-    if (urlStreams !== "/"){
-      handleStreamsUpdate(urlStreams.split("/"));
-      setStreamChat(urlStreams.split("/")[1]);
+    const params = new URLSearchParams(window.location.search);
+    const urlStreams = params.get('streams');
+    if (urlStreams){
+      const streamList = urlStreams.split(',');
+      handleStreamsUpdate(streamList);
+      setStreamChat(streamList[0]);
+      setShowDialog(false);
       return;
     } 
     
@@ -73,6 +84,7 @@ export default function Page() {
     if (cachedStreams !== null) {
       handleStreamsUpdate(cachedStreams?.split("/"));
       setStreamChat(cachedStreams?.split("/")[1]);
+      setShowDialog(false);
     }
   }, []);
 
