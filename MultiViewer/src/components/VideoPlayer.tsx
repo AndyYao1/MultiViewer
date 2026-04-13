@@ -1,12 +1,12 @@
 import { XMarkIcon, ChevronDoubleUpIcon, ChevronDoubleDownIcon, ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
 import { useSortable } from "@dnd-kit/react/sortable";
-import React, { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import DragIcon from "../assets/DragIcon.tsx";
 
 const VideoPlayer = ({stream,index,setSpotlightStream,removeSpotlight,removeStream,setChat}: {stream:string, index:number, setSpotlightStream:(stream:string)=>void, removeSpotlight:()=>void, removeStream:(steam:string)=>void, setChat:(stream:string)=>void}) => {
     const [element,setElement] = useState<HTMLElement|null>(null);
     const handleRef = useRef<HTMLDivElement>(null);
-    const { isDragging } = useSortable({id:stream, index ,element, handle: handleRef});
+    const {} = useSortable({id:stream, index ,element, handle: handleRef});
 
     return (
         <div className={`flex ml-1 mb-1 min-w-0 relative ${stream}`} ref={setElement}>

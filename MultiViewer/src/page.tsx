@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ChatBox from "./components/Chatbox";
 import VideoPlayer from "./components/VideoPlayer";
 import { PencilIcon,PlusIcon } from "@heroicons/react/24/outline";
@@ -11,8 +11,12 @@ import { isSortable } from "@dnd-kit/dom/sortable";
 
 export default function Page() {
   const containerRef = useRef<HTMLDivElement>(null);
+
   const [streams,setStreams] = useState<string[]>([]);
   const streamsRef = useRef<string[]>([]);
+
+  const [showDialog,setShowDialog] = useState<boolean>(window.location.pathname === "/" && localStorage.getItem(localStreamsString) === null);
+
   const [streamChat,setStreamChat] = useState<string>("");
   const [chatWidth,setChatWidth] = useState<number>(parseInt(localStorage.getItem(localChatWidthString) || ((window.innerWidth*25)/100).toString()));
 
@@ -53,8 +57,10 @@ export default function Page() {
 
   const addStreams = (addedStreams:string[]) => {
     handleStreamsUpdate([...streamsRef.current, ...addedStreams]);
+    setShowDialog(false);
   }
 
+  // grab streams from url or localstorage
   useEffect(() => {
     const urlStreams = window.location.pathname;
     if (urlStreams !== "/"){
@@ -98,32 +104,28 @@ export default function Page() {
         }}
       >
         <div className="flex flex-wrap relative streamContainer h-screen overflow-y-auto max-w-max mt-1 items-start" style={{'--chat-width': `${chatWidth}px`}} ref={containerRef}>
-          { streams.length > 0 ? streams.map((stream,index) =>
-              <VideoPlayer stream={stream} index={index} setSpotlightStream={setSpotlightStream} removeSpotlight={removeSpotlight} removeStream={removeStream} setChat={setStreamChat} key={stream}/>
-            ) 
-            :
-            <AddModal addStreams={addStreams}/>
-          }
+          {streams.map((stream,index) =>
+            <VideoPlayer stream={stream} index={index} setSpotlightStream={setSpotlightStream} removeSpotlight={removeSpotlight} removeStream={removeStream} setChat={setStreamChat} key={stream}/>)}
         </div>
       </DragDropProvider>
 
       {/* add/edit buttons */}
       <div className="mr-1 h-screen w-5 ml-auto flex flex-col space-y-1 mt-1">
-        <button className="bg-gray-500 w-5 h-5 rounded" command="show-modal" commandfor="add-menu"><PlusIcon></PlusIcon></button>
+        <button className="bg-gray-500 w-5 h-5 rounded" onClick={() => {setShowDialog(true)}}><PlusIcon></PlusIcon></button>
         <button className="bg-gray-500 w-5 h-5 rounded" onClick={handleEditClick}><PencilIcon></PencilIcon></button>
-        <AddModal addStreams={addStreams}></AddModal>
+        <AddModal showDialog={showDialog} onClose={()=> setShowDialog(false)} addStreams={addStreams}></AddModal>
       </div>
 
       {/* chat */}
-      { streamChat ?
+      { streamChat || streamsRef.current[0] ?
         <Resizable 
           className="border-l border-solid border-[#34343c] fixed top-0 right-0"
           enable={{top:false, right:false, bottom:false, left:true, topRight:false, bottomRight:false, bottomLeft:false, topLeft:false}}
           size={{height: "screen", width: chatWidth}}
-          onResizeStop={(e, direction, ref, d) => {
+          onResizeStop={(_e,_direction,_ref,d) => {
             setChatWidth(chatWidth + d.width); 
             localStorage.setItem(localChatWidthString, (chatWidth + d.width).toString())}}>
-              <ChatBox stream={streamChat}/>
+              <ChatBox stream={streamChat || streamsRef.current[0]}/>
         </Resizable>
         : null}
     </div>

@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { localStreamsString } from "../constants";
 
-export default function AddModal({addStreams}: {addStreams:(streams:string[])=>void}){
+interface AddModalProps {
+    showDialog: boolean
+    onClose: () => void;
+    addStreams: (streams:string[])=>void
+}
+
+export default function AddModal({showDialog, onClose, addStreams}:AddModalProps){
     const [fields, setFields] = useState<{id: number; value: string;}[]>([{id: 0, value: ''}]);
     const [nextId, setNextId] = useState<number>(1);
     const lastItemRef = useRef<HTMLInputElement>(null);
     const focusNeeded = useRef<boolean>(false);
+
     const dialogRef = useRef<HTMLDialogElement>(null);
 
     const handleChange = (id:number, value:string) => {
@@ -37,8 +43,16 @@ export default function AddModal({addStreams}: {addStreams:(streams:string[])=>v
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        handleAddStreams();
-        dialogRef.current?.close();
+        if (fields.length > 1) {
+            handleAddStreams();
+        }
+        onClose();
+    }
+
+    const handleClose = () => {
+        setFields([{id: 0, value: ''}]);
+        setNextId(1);
+        onClose();
     }
 
     // focuses last field after removing a field
@@ -47,30 +61,31 @@ export default function AddModal({addStreams}: {addStreams:(streams:string[])=>v
             lastItemRef.current.focus();
             focusNeeded.current = false;
         }
-    },[fields]);
+    }, [fields]);
 
+    // Open/close dialog when showDialog changes
     useEffect(() => {
-        if (window.location.pathname === "/" && localStorage.getItem(localStreamsString) === null) {
-            dialogRef.current?.showModal();
-        } else {
-            dialogRef.current?.close();
+        const dialog = dialogRef.current;
+        if (dialog){
+            if (showDialog && !dialog.open) {
+                dialog.showModal();
+            } else if (!showDialog && dialog.open) {
+                dialog.close();
+            }
         }
-    }, []);
+    }, [showDialog]);
 
     return(
         <dialog 
             id="add-menu"
-            ref={dialogRef} 
+            ref={dialogRef}
             className="backdrop:bg-black/50 rounded-lg shadow-xl p-0 w-[25vw] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-6/10"
-            onMouseDown={(e) => {
+            onClick={(e) => {
                 if (e.target === e.currentTarget) {
-                    e.currentTarget.close();
+                    handleClose();
                 }
             }}
-            onClose={() => {
-                setFields([{id: 0, value: ''}]);
-                setNextId(1);
-            }}
+            onClose={handleClose}
         >   
             <form onSubmit={handleSubmit}>
                 <div className="bg-neutral-800 text-slate-200 rounded-lg">
@@ -105,9 +120,8 @@ export default function AddModal({addStreams}: {addStreams:(streams:string[])=>v
                         </button>
 
                         <button
-                            command="close"
-                            commandfor="add-menu"
                             type="button"
+                            onClick={handleClose}
                             className="px-4 py-2 bg-zinc-600 text-slate-300 rounded hover:bg-zinc-700 transition"
                         >
                             Cancel
